@@ -23,62 +23,49 @@
  * @date 2023-08-25
  */
 #include <Arduino.h>
-#include "SPI.h"
-#include "CYD28_LDR.h"
-#include "CYD28_RGBled.h"
-#include "CYD28_SD.h"
-#include "CYD28_Display.h"
-#include "gui.h"
-#include "CYD28_audio.h"
-#include "console.h"
+#include <FastLED.h>
 
-#include <Update.h>
-#include <WebServer.h>
-#include <DNSServer.h>
-#include <WiFiManager.h>
+#define RGB_LED_PIN 27
+#define NUM_LEDS 1
+#define LED_TYPE    WS2812B
+#define COLOR_ORDER GRB
+
+#define LCD_BACKLIGHT_PIN 25
 
 
-LDR ldr;
-RGBLED led;
-WiFiManager wifiManager;
+#define WAVE_PIN 8      // P3 / CN1 connector
+#define FREQ_HZ 523
 
-uint32_t tNow, tLast;
+CRGB leds[NUM_LEDS];
+const float FLASH_DELAY_MS = 500;
 
 void setup()
 {
-	Serial.begin(115200);
-#ifndef DUSE_BACKLIGHT_MOD
-	pinMode(21, OUTPUT);		// turn on the display backlight
-	digitalWrite(21, HIGH);
-#endif
+	// Set serial baud rate
+	Serial.begin(9600);
+	Serial.write("Serial initialized\n");
 
-	console_init();
-	delay(1500);
-	
-	led.begin();
-	analogReadResolution(10);
-	ldr.begin();
-	ldr.thresSet(300);
-	ldr.hystSet(100);
-	audioInit();
-	display.begin(CYD28_DISPLAY_ROT_LANDSC1);
+	// Flash LCD backlight
+	// pinMode(LCD_BACKLIGHT_PIN, OUTPUT);
+	// digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
 
-	gui_init();
-	sdcard.begin();
-	// Set the SSID and possword for the AP here:
-	wifiManager.autoConnect("CYD28", "passwordcyd28");
+	// Pin the RMT driver at compile time (never initializes or links PARLIO)
+  	FastLED.addLeds<LED_TYPE, RGB_LED_PIN, COLOR_ORDER, fl::Bus::RMT>(leds, NUM_LEDS);
+    FastLED.setBrightness(50);
+
+	pinMode(WAVE_PIN, OUTPUT);
+	tone(WAVE_PIN, FREQ_HZ);
 }
 
 void loop()
 {
-	display.loop();
-	console_process();
+	leds[0] = CRGB::Red; FastLED.show();
+	// rgbLedWrite(27, 255, 0, 0); // Red
+	// digitalWrite(LCD_BACKLIGHT_PIN, LOW);
+	delay(FLASH_DELAY_MS);
 
-	// tNow = millis();
-	// if (tNow - tLast > 1000)
-	// {
-	// 	tLast = tNow;
-
-	// }
-
+	leds[0] = CRGB::Blue; FastLED.show();
+	// rgbLedWrite(27, 0, 0, 255); // Blue
+	// digitalWrite(LCD_BACKLIGHT_PIN, HIGH);
+	delay(FLASH_DELAY_MS);
 }
