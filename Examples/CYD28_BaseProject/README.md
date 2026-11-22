@@ -1,4 +1,55 @@
-# ESP32-2432S028 base project example 
+# NM-CYD-C5 square-wave tone keypad
+
+The current firmware targets the [RockBase NM-CYD-C5](https://wiki.rockbaseiot.com/docs/products/nm-cyd-c5/),
+not the original ESP32-2432S028 described in the legacy notes below.
+It generates square waves on **GPIO8**, with an initial entry of **523 Hz**, and accepts
+integer frequencies from **400 to 800 Hz**.
+
+## Using the keypad
+
+* On first boot, hold each of the three calibration crosses until it disappears,
+  then release before touching the next. Calibration is saved in flash.
+* Enter a frequency using the numberpad, then tap **APPLY** to play it immediately.
+  Typing alone does not change the playing tone. After applying, the next digit
+  starts a fresh entry.
+* **CLR** clears the entry; **DEL** removes its last digit. Neither stops playback.
+* **STOP** stops the square wave. **APPLY** resumes it with a valid entry.
+* **CAL** repeats touch calibration if needed. Invalid input leaves the output
+  unchanged and displays an error.
+* Playback starts stopped, with a blue LED. The LED is green during playback.
+  **APPLY** and **STOP** flash red for 500 ms (including invalid APPLY entries),
+  then return to the playback color without blocking touch handling.
+  Calibration shows steady white until finished, then restores the playback
+  color. Calibration does not change playback.
+
+## Hardware and build
+
+The ST7789 display and XPT2046 touch controller share hardware SPI:
+SCK **6**, MISO **2**, MOSI **7**, LCD CS **23**, LCD DC **24**, touch CS **1**.
+Unused SD CS **10** stays high; LCD backlight **25** stays on. WS2812 uses **27**.
+GPIO8 remains dedicated to tone output; do not also use it for I2C.
+
+The firmware uses Adafruit's ST7789 driver and XPT2046_Touchscreen instead of the
+bundled legacy CYD drivers, whose pins and TFT_eSPI processor code do not support
+this C5 board. PlatformIO installs the dependencies declared in `platformio.ini`;
+unused Adafruit shield dependencies (SD and seesaw) are excluded.
+Build with `pio run -e nm-cyd-c5`; upload with `pio run -e nm-cyd-c5 -t upload`.
+Serial diagnostics use **9600 baud**.
+
+The host-only assertions in `test/test_tone_keypad.cpp` cover frequency limits,
+editing, and touch coordinate transforms. With MSVC available, run from a
+Developer Command Prompt:
+
+```bat
+cl /nologo /EHsc /std:c++14 /Iinclude test\test_tone_keypad.cpp /Fe:%TEMP%\test_tone_keypad.exe /Fo:%TEMP%\test_tone_keypad.obj
+%TEMP%\test_tone_keypad.exe
+```
+
+LCD, touch, and GPIO8 waveform verification require the physical board.
+
+---
+
+## Legacy ESP32-2432S028 base project notes
 
 Complete, optimized for the hardware starting project for the 2.8" version of the Cheap Yellow Display.  
 
